@@ -6,18 +6,71 @@ from operator import xor
 from matplotlib import pyplot as plt
 import os
 from numba import njit
-
+import pydicom
+from pydicom.data import get_testdata_files
+from numba import jit
 
 SZ=90
-IN_DIR = 'C:\\_Denis\\img\\'
+IN_DIR = 'C:\\_Denis\\dcm1\\'
 OUT_DIR = "C:\\_Denis\\out\\"
+
+FALSE_VAL=-2047
+TRUE_VAL=0
 
 start_xx = 240
 start_yy = 240
-zona_delta_r = 1
+zona_delta_r = 2
 rmin = 12
-rmax = 19
+rmax = 22
 
+def read_dicom(fname):
+    dataset = pydicom.dcmread( fname)
+    rows = int(dataset.Rows)
+    cols = int(dataset.Columns)
+    flat = np.array(dataset.pixel_array.flat)
+    TR1=1900
+    TR2=2250
+
+    mn = -2047
+    mx = 2047
+    wl=0
+    ww=20
+    flat[flat <= wl - ww/2] = mn
+    flat[flat >= wl + ww/2] = mx
+
+    for i,value in enumerate(flat):
+        if value <= wl - ww/2:
+            flat[i] = FALSE_VAL
+        elif value >= wl + ww/2:
+            flat[i] = TRUE_VAL
+        else:
+            flat[i] = TRUE_VAL
+
+
+    # flat += 2048
+    # flat[flat<TR1]=0
+    # flat[flat>TR2]=0
+    # flat -= TR1
+    mid = (TR2 - TR1)/2
+    # for i,value in enumerate(flat):
+    #     if value<mid:
+    #         flat[i] = value *0.1
+    #     else:
+    #         flat[i] = value
+
+
+
+    res=flat.reshape([cols, rows])
+
+    res = res[start_yy:start_yy + SZ, start_xx:start_xx + SZ]
+    # largest_idx = largest_indices(res, 5)
+    # for i in range(5):
+    #     print( str( largest_idx[0][i] )+' '+str(largest_idx[1][i])+'='+str(res[largest_idx[0][i]][largest_idx[1][i]]))
+
+
+
+
+    return res
 
 def largest_indices(ary, n):
     """Returns the n largest indices from a numpy array."""
@@ -27,60 +80,69 @@ def largest_indices(ary, n):
     return np.unravel_index(indices, ary.shape)
 
 def FIND_CIRCLE(jpeg_name):
-    arr = np.zeros([SZ, SZ], np.int8)
+    # arr = np.zeros([SZ, SZ], np.int8)
     fname=jpeg_name #"IMG-0001-00027.jpg"
-    image = cv2.imread(IN_DIR+fname)
+    image = read_dicom(IN_DIR+fname)
+    arr = image
+    # plt.imshow(image, cmap='gray')
+    # plt.show()
+    # plt.close()
 
-    wx = SZ
-    wy = SZ
-    img = image[start_yy:start_yy + wy, start_xx:start_xx + wx]
-    img[img > 200] = 0
-    edges =  cv2.Canny(img, 100, 400, 1)
-    img_out = img.copy()
-
-
-    for x in range(SZ):
-        for y in range(SZ):
-            if edges[x,y]>111:
-                arr[x][y]=100
-    #plt.imshow(arr)
-    #plt.show()
-
+    # wx = SZ
+    # wy = SZ
+    # img = image[start_yy:start_yy + wy, start_xx:start_xx + wx]
+    # img[img > 200] = 0
+    # edges =  cv2.Canny(img, 100, 400, 1)
+    img_out = image.copy()
 
     haugh=np.zeros([SZ,SZ,100] , np.float)
 
+    @jit
     def score(center_x,center_y,radii, delta_radii):
         result=0
         total_count=0
         max_r = radii+2*delta_radii
+
+        radii2 = radii * radii
+
         if center_x-max_r <0: return 0
         if center_y-max_r <0: return 0
         if center_x+max_r >=SZ: return 0
         if center_y+max_r >=SZ: return 0
 
+        # if center_x == 62 and center_y == 30:
+        #     print(123)
+
         for x in range(center_x-max_r,center_x+max_r+1):
             for y in range(center_y-max_r,center_y+max_r+1):
                 r2 =   (x-center_x)*(x-center_x) + (y-center_y)*(y-center_y)
-                radii2=radii*radii
-
                 if(r2<radii2):
                     total_count+=1
-                    if(arr[x][y]==0):
+                    if(arr[x][y]==TRUE_VAL):
                         result+=1
-                if(r2>(radii+delta_radii)*(radii+delta_radii) and r2<=(radii+2*delta_radii)*(radii+2*delta_radii)):
+                if(r2 > (radii+delta_radii)*(radii+delta_radii) and r2 <= (radii+2*delta_radii)*(radii+2*delta_radii)):
                     total_count += 1
-                    if(arr[x][y]==0):
+                    if(arr[x][y]==FALSE_VAL):
                         result+=1
 
 
                 # 8 neibour [+1 0 1]X[+1 0 1]
+                true_val_count =0
+                false_val_count =0
+                border_count = 0
                 for dx in [-1,0,1]:
                     for dy in [-1,0,1]:
                         r2 = (x+dx - center_x) * (x+dx - center_x) + (y+dy - center_y) * (y+dy - center_y)
                         if(r2>=radii2 and r2<=(radii+delta_radii)*(radii+delta_radii)):
-                            total_count += 1
-                            if(arr[x+dx][y+dy]==100):
-                                result+=1
+                            border_count += 1
+                            if(arr[x+dx][y+dy]==TRUE_VAL):
+                                true_val_count+=1
+                            if(arr[x+dx][y+dy]==FALSE_VAL):
+                                false_val_count+=1
+                border_rate =  5*(border_count-abs(false_val_count-true_val_count))/( 1 + abs(false_val_count-true_val_count))
+
+                total_count+=1
+                result+=border_rate
                 #OK!
                 #if(r2>=radii2 and r2<=(radii+delta_radii)*(radii+delta_radii)):
                 #    total_count += 5
@@ -114,11 +176,11 @@ def FIND_CIRCLE(jpeg_name):
 
         for x in range(SZ):
             for y in range(SZ):
-                if (x - xx) ** 2 + (y - yy) ** 2 <= rr ** 2:
-                    #arr[x][y] = xor(clr,arr[x][y])
-                    img_out[x][y][0] = min(30+int(r1*img_out[x][y][0] ), 255)
-                    img_out[x][y][1] = min(30+int(r2*img_out[x][y][1] ), 255)
-                    img_out[x][y][2] = min(30+int(r3*img_out[x][y][2] ), 255)
+                if (x - xx) ** 2 + (y - yy) ** 2 <= rr ** 2 :
+                    arr[x][y] = xor(clr , arr[x][y])
+                    # img_out[x][y] = min(30+int(r1*img_out[x][y][0] ), 255)
+                    # img_out[x][y] = min(30+int(r2*img_out[x][y][1] ), 255)
+                    # img_out[x][y][2] = min(30+int(r3*img_out[x][y][2] ), 255)
 
     print(largest_index)
     for i in range(20):
@@ -139,16 +201,16 @@ def FIND_CIRCLE(jpeg_name):
     ##
     fig = plt.figure(figsize=(10, 10))
     fig.add_subplot(2, 2, 1)
-    plt.imshow(img, cmap='gray')
+    plt.imshow(image, cmap='gray')
 
-    fig.add_subplot(2, 2, 2)
-    plt.imshow(edges, cmap='gray')
+    # fig.add_subplot(2, 2, 2)
+    # plt.imshow(edges, cmap='gray')
 
     fig.add_subplot(2, 2, 3)
     plt.imshow(img_out)
     plt.title(f'r={r_score} {x_score},{y_score}')
-    plt.savefig(OUT_DIR  + 'out' + fname)
-    #plt.show()
+    # plt.savefig(OUT_DIR  + 'out' + fname)
+    plt.show()
     plt.close()
 
 
@@ -157,9 +219,10 @@ def main():
     files = os.listdir(IN_DIR)
     for f in files:
         print(f)
-        if f.find('IMG')==0:
+        if f.find('.dcm')>=0:
             FIND_CIRCLE(f)
 
-
-#main()
-FIND_CIRCLE('IMG-0001-00031.jpg')
+main()
+#FIND_CIRCLE('IMG-0001-00031.jpg')
+#read_dicom('1.2.392.200036.9116.2.6.1.48.1214242851.1571977503.267444.dcm')
+#read_dicom('I:\\КТ для нейросети норма\\Брюшная полость\\1-50\\6\\1.2.392.200036.9116.2.6.1.48.1214242851.1572235470.185170.dcm')
