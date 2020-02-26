@@ -9,6 +9,7 @@ from numba import njit
 import pydicom
 from pydicom.data import get_testdata_files
 from numba import jit
+#pip install opencv-python pydicom
 
 SZ=90
 IN_DIR = 'C:\\_Denis\\dcm1\\'
@@ -166,10 +167,9 @@ def FIND_CIRCLE(jpeg_name):
     print(max_score)
 
 
-    largest_index =  largest_indices(haugh, 20)
 
-
-    def drw_circle(xx,yy,rr,clr):
+    def drw_circle(img,xx,yy,rr,clr):
+        res=img.copy()
         r1 = np.random.sample()+0.7
         r2 = np.random.sample()+0.7
         r3 = np.random.sample()+0.7
@@ -177,38 +177,48 @@ def FIND_CIRCLE(jpeg_name):
         for x in range(SZ):
             for y in range(SZ):
                 if (x - xx) ** 2 + (y - yy) ** 2 <= rr ** 2 :
-                    arr[x][y] = xor(clr , arr[x][y])
+                    res[x][y] =500 # img_out[x][y]+300
                     # img_out[x][y] = min(30+int(r1*img_out[x][y][0] ), 255)
                     # img_out[x][y] = min(30+int(r2*img_out[x][y][1] ), 255)
                     # img_out[x][y][2] = min(30+int(r3*img_out[x][y][2] ), 255)
+        return res
 
+
+
+
+    largest_index =  largest_indices(haugh, 20)
     print(largest_index)
-    for i in range(20):
+    fig = plt.figure(figsize=(10, 10))
+
+    fig.add_subplot(4, 4, 1)
+    plt.imshow(image, cmap='gray')
+
+    for i in range(15):
         x=largest_index[0][i]
         y=largest_index[1][i]
         r=largest_index[2][i]
-        drw_circle(x,y,r , 100)
+        fig.add_subplot(4, 4, 2+ i)
+        plt.imshow(drw_circle(img_out,x,y,r+1 , 100), cmap='gray')
 
-    x_score =max_score[0][0]
-    y_score =max_score[1][0]
-    r_score =max_score[2][0]
-    drw_circle(x_score,y_score,r_score,200)
+
+    # x_score =max_score[0][0]
+    # y_score =max_score[1][0]
+    # r_score =max_score[2][0]
+
+    # drw_circle(x_score,y_score,r_score,200)
     #plt.imshow(img)
     #plt.show()
 
 
 
     ##
-    fig = plt.figure(figsize=(10, 10))
-    fig.add_subplot(2, 2, 1)
-    plt.imshow(image, cmap='gray')
 
     # fig.add_subplot(2, 2, 2)
     # plt.imshow(edges, cmap='gray')
 
-    fig.add_subplot(2, 2, 3)
-    plt.imshow(img_out)
-    plt.title(f'r={r_score} {x_score},{y_score}')
+    # fig.add_subplot(2, 2, 3)
+    # plt.imshow(img_out, cmap='gray')
+    # plt.title(f'r={r_score} {x_score},{y_score}')
     # plt.savefig(OUT_DIR  + 'out' + fname)
     plt.show()
     plt.close()
