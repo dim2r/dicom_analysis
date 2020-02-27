@@ -124,7 +124,7 @@ def FIND_CIRCLE(jpeg_name):
                 if(r2 > (radii+delta_radii)*(radii+delta_radii) and r2 <= (radii+2*delta_radii)*(radii+2*delta_radii)):
                     total_count += 1
                     if(arr[x][y]==FALSE_VAL):
-                        result+=1
+                        result+=2
 
 
                 # 8 neibour [+1 0 1]X[+1 0 1]
