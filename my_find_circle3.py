@@ -18,12 +18,16 @@ OUT_DIR = "C:\\_Denis\\out\\"
 FALSE_VAL=-2047
 TRUE_VAL=0
 
+INNER_FACTOR=1
+BORDER_FACTOR=5
+OUTER_FACTOR=2
+
 start_xx = 240
 start_yy = 240
 zona_delta_r = 2
 rmin = 12
 rmax = 22
-
+outnum=0
 def read_dicom(fname):
     dataset = pydicom.dcmread( fname)
     rows = int(dataset.Rows)
@@ -80,7 +84,7 @@ def largest_indices(ary, n):
     indices = indices[np.argsort(-flat[indices])]
     return np.unravel_index(indices, ary.shape)
 
-def FIND_CIRCLE(jpeg_name):
+def FIND_CIRCLE(jpeg_name, outprefix):
     # arr = np.zeros([SZ, SZ], np.int8)
     fname=jpeg_name #"IMG-0001-00027.jpg"
     image = read_dicom(IN_DIR+fname)
@@ -120,11 +124,11 @@ def FIND_CIRCLE(jpeg_name):
                 if(r2<radii2):
                     total_count+=1
                     if(arr[x][y]==TRUE_VAL):
-                        result+=1
+                        result+=INNER_FACTOR
                 if(r2 > (radii+delta_radii)*(radii+delta_radii) and r2 <= (radii+2*delta_radii)*(radii+2*delta_radii)):
                     total_count += 1
                     if(arr[x][y]==FALSE_VAL):
-                        result+=2
+                        result+=OUTER_FACTOR
 
 
                 # 8 neibour [+1 0 1]X[+1 0 1]
@@ -140,7 +144,7 @@ def FIND_CIRCLE(jpeg_name):
                                 true_val_count+=1
                             if(arr[x+dx][y+dy]==FALSE_VAL):
                                 false_val_count+=1
-                border_rate =  5*(border_count-abs(false_val_count-true_val_count))/( 1 + abs(false_val_count-true_val_count))
+                border_rate =  BORDER_FACTOR*(border_count-abs(false_val_count-true_val_count))/( 1 + abs(false_val_count-true_val_count))
 
                 total_count+=1
                 result+=border_rate
@@ -219,18 +223,21 @@ def FIND_CIRCLE(jpeg_name):
     # fig.add_subplot(2, 2, 3)
     # plt.imshow(img_out, cmap='gray')
     # plt.title(f'r={r_score} {x_score},{y_score}')
-    # plt.savefig(OUT_DIR  + 'out' + fname)
-    plt.show()
+
+    plt.savefig(OUT_DIR  + outprefix + fname+".png")
+    #plt.show()
     plt.close()
 
 
 
 def main():
     files = os.listdir(IN_DIR)
+    outprefix=0
     for f in files:
         print(f)
+        outprefix+=1
         if f.find('.dcm')>=0:
-            FIND_CIRCLE(f)
+            FIND_CIRCLE(f,'out'+str(outprefix)+'_')
 
 main()
 #FIND_CIRCLE('IMG-0001-00031.jpg')
