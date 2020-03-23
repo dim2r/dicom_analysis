@@ -4941,7 +4941,7 @@ function _via_reg_canvas_keydown_handler(e) {
   if ( e.ctrlKey ) {
     _via_is_ctrl_pressed = true;
   }
-
+//          alert(e.key.charCodeAt(0));
   if (_via_current_image_loaded) {
     if ( e.key === 'Enter' ) {
         if ( _via_current_shape === VIA_REGION_SHAPE.POLYLINE ||
@@ -5024,7 +5024,7 @@ function _via_reg_canvas_keydown_handler(e) {
       return;
     }
 
-    if ( e.key === 'b' ) {
+    if ( e.key === 'b' || e.key.charCodeAt(0) === 1080) {
       toggle_region_boundary_visibility();
       e.preventDefault();
       return;
@@ -5051,9 +5051,9 @@ function _via_reg_canvas_keydown_handler(e) {
            e.key === 'ArrowDown'  ||
            e.key === 'ArrowUp' ) {
         sel_all_regions(); //DR
-        var del = 1;
+        var del = 1 / _via_canvas_scale;
         if ( e.shiftKey ) {
-          del = 1;
+          del = 3;
         }
         var move_x = 0;
         var move_y = 0;
