@@ -6,11 +6,11 @@ import os
 import cv2
 import PIL # optional
 
-path=u"I:\\Tomography"
+path=u"I:\\Tomography\\set2"
 
 #
 for curdir, subdirs, files in os.walk(path):
-	outdir = curdir.replace("I:","C:\\_Denis\\DCM2JPG")
+	outdir = curdir.replace("I:","C:\\_Denis\\MarkSet2")
 	print(outdir)
 	for n, image_name in enumerate(files):
 		if image_name.find('.dcm')>=0:
@@ -18,7 +18,14 @@ for curdir, subdirs, files in os.walk(path):
 			try:
 				ds = dicom.dcmread(os.path.join(curdir, image_name))
 				pixel_array_numpy = ds.pixel_array
-				pixel_array_numpy+=50
+
+				print(pixel_array_numpy.min())
+				print(pixel_array_numpy.max())
+				if curdir.find('-h')>-1:
+					pixel_array_numpy-=910
+				else:
+					pixel_array_numpy+=70
+				
 				out_image_name = image_name.replace('.dcm', '.jpg')
 				print(f"{outdir} {out_image_name}")
 
