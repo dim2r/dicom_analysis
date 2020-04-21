@@ -11,11 +11,13 @@ from PIL import Image
 from numba import jit
 
 
-path=u"I:\\Tomography\\set1"
+# path=u"I:\\Tomography\\set1"
+path=u"I:\\Tomography\\set2"
 
 #C:\_Denis\train_data\MarkSet1v2_original\set1
 for curdir, subdirs, files in os.walk(path):
-    outdir = curdir.replace("I:\\Tomography","C:\\_Denis\\train_data\\MarkSet1v2_original")
+    # outdir = curdir.replace("I:\\Tomography","C:\\_Denis\\train_data\\MarkSet1v2_original")
+    outdir = curdir.replace("I:\\Tomography","C:\\_Denis\\train_data\\MarkSet2_original")
     print(outdir)
     for n, image_name in enumerate(files):
         if image_name.find('.dcm')>=0:
