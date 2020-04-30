@@ -4,8 +4,9 @@ import math
 
 import pydicom
 import os.path
-from PIL import Image
+from PIL import Image, ImageDraw
 import sys
+
 #{
 #"file:.\\set1\\abdomen\\1\\1.2.392.200036.9116.2.6.1.48.1214242851.1571977503.267444.jpg-1":
 #
@@ -14,9 +15,9 @@ import sys
 #},
 
 
-with open('via_export_json_final_set1.json', 'r') as f:
-#with open('via_export_json_set2_up_to_12000.json', 'r') as f:
-#with open('via_export_json_set2_12-24-.json', 'r') as f:
+# with open('via_export_json_final_set1.json', 'r') as f:
+# with open('via_export_json_set2_up_to_12000.json', 'r') as f:
+with open('via_export_json_set2_12-24-.json', 'r') as f:
     loaded_json = json.load(f)
 
 i=0
@@ -26,15 +27,27 @@ for jkey in loaded_json:
 	regions=loaded_json[jkey]['regions']
 	filename=loaded_json[jkey]['filename']
 
-	in_file = filename.replace('file:.','C:\\_Denis\\MarkSet1')
-	out_file = filename.replace('file:.','C:\\_Denis\\MarkSet1').replace('.jpg','.gif')
+	# in_file = filename.replace('file:.','C:\\_Denis\\MarkSet1')
+	# out_file = filename.replace('file:.','C:\\_Denis\\train_data\\MarkSet1_original').replace('.jpg','.gif')
+	in_file = filename.replace('file:.','C:\\_Denis\\MarkSet2')
+	out_file = filename.replace('file:.','C:\\_Denis\\train_data\\MarkSet2_original').replace('.jpg','.gif')
 
 	img2 = Image.new('RGB', (512,512), "black")  # create a new black image
 	pixels2 = img2.load()  # create the pixel map
 	need_save = False
 	for region in regions:
 		name = region['shape_attributes']['name']
-		if name == 'circle':
+		if name == 'polyline' or name=='polygon':
+			xxx=region['shape_attributes']['all_points_x']
+			yyy=region['shape_attributes']['all_points_y']
+			xxyy=list(zip(xxx,yyy))
+			drw = ImageDraw.Draw(img2)
+			drw.polygon(xxyy, fill="white", outline="black")
+			# img2.show()
+			print('polyline')
+			need_save=True
+
+		if name == 'Xcircle':
 			cx = region['shape_attributes']['cx']
 			cy = region['shape_attributes']['cy']
 			radii = int(round(region['shape_attributes']['r']))
@@ -45,9 +58,9 @@ for jkey in loaded_json:
 					if (xx * xx) + (yy * yy) <= radii * radii:
 						pixels2[xx+cx, yy+cy] = (255, 255, 255)  # set the colour accordingly
 
-		if name == 'ellipse':
+		if name == 'Xellipse':
 			def drawEllipse(cx, cy, wx, wy, theta):
-				print('drawEllipse '+str(cx)+','+str(cy)+','+str(rx)+','+str(ry)+','+str(theta) )
+				# print('drawEllipse '+str(cx)+','+str(cy)+','+str(rx)+','+str(ry)+','+str(theta) )
 				# theta = np.radians(30)
 				c, s = np.cos(theta), np.sin(theta)
 				R = np.array(((c, -s), (s, c)))
@@ -83,4 +96,5 @@ for jkey in loaded_json:
 		print(out_file)
 		print(saved)
 	else:
-		print ("skip "+out_file)
+		# print ("skip "+out_file)
+		pass

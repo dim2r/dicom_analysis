@@ -3,7 +3,7 @@ import os
 import sys
 import pathlib
 
-path=u"C:\\_Denis\\MarkSet2"
+path=u"C:\\_Denis\\train_data\\MarkSet2_original"
 outdir_ = path+"_augment"
 
 for curdir, subdirs, files in os.walk(path):
@@ -12,9 +12,9 @@ for curdir, subdirs, files in os.walk(path):
         _, ext = os.path.splitext(image_name)
 
         outdir = curdir.replace(path,outdir_)
-        if ext=='.jpg' or  ext=='.gif':
+        if ext=='.jpg' or  ext=='.gif' or  ext=='.png':
             pathlib.Path(outdir).mkdir(parents=True, exist_ok=True)
-            print(outdir)
+            print(f'{outdir} {image_name}')
             colorImage = Image.open(curdir+'\\'+image_name)
             rotated = colorImage.rotate(3)
             rotated.save(outdir +'\\r3.'+image_name )
