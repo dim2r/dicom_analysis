@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import pydicom as dicom
+from pydicom.pixel_data_handlers.util import apply_modality_lut
 import pathlib
 import os
 import numpy as np
-import cv2
+# import cv2
 import PIL # optional
 from numba import jit
 from PIL import Image
@@ -17,14 +18,17 @@ path=u"I:\\Tomography\\set2"
 #C:\_Denis\train_data\MarkSet1v2_original\set1
 for curdir, subdirs, files in os.walk(path):
     # outdir = curdir.replace("I:\\Tomography","C:\\_Denis\\train_data\\MarkSet1v2_original")
-    outdir = curdir.replace("I:\\Tomography","C:\\_Denis\\train_data\\MarkSet2_original")
+    outdir = curdir.replace("I:\\Tomography","C:\\_Denis\\train_data2\\MarkSet2_original")
     print(outdir)
     for n, image_name in enumerate(files):
         if image_name.find('.dcm')>=0:
             try:
                 ds = dicom.dcmread(os.path.join(curdir, image_name))
-                pixel_array_numpy = ds.pixel_array
-                pixel_array_numpy += 2048
+                hu = apply_modality_lut(ds.pixel_array, ds)
+                # pixel_array_numpy = ds.pixel_array
+                pixel_array_numpy = hu
+                pixel_array_numpy = pixel_array_numpy.astype(int)
+                pixel_array_numpy += 4096 #2048
                 pixel_array_numpy <<= 3
                 pixel_array_numpy = pixel_array_numpy.astype(np.uint32)
                 out_image_name = image_name.replace('.dcm', '.png')
